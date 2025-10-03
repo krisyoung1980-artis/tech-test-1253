@@ -13,6 +13,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   display: flex;
@@ -27,8 +31,11 @@ h1 {
 }
 
 #root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  width: 100vw;
+  height: 100svh;
+}
+
+.container {
+  padding: 0.5rem;
+  height: 100%;
 }

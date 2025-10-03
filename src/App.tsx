@@ -1,9 +1,10 @@
 import React from "react";
+import { SpreadsheetGrid } from "./components/SpreadsheetGrid";
 
 export const App: React.FC = () => {
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Spreadsheet Goes Here :)</h1>
+    <div className="container">
+      <SpreadsheetGrid />
     </div>
   );
 };
