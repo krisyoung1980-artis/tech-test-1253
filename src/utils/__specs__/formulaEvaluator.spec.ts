@@ -1,10 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { SpreadsheetState } from "../../types/spreadsheet";
 import {
+  evaluateFormula,
   resolveCellReference,
   substituteCellReferences,
-  evaluateFormula,
 } from "../formulaEvaluator";
-import type { SpreadsheetState } from "../../types/spreadsheet";
+
+vi.mock("../logger");
 
 describe("formulaEvaluator", () => {
   describe("resolveCellReference", () => {
@@ -182,7 +184,6 @@ describe("formulaEvaluator", () => {
 
     it("should return #ERROR for division by zero", () => {
       const spreadsheet: SpreadsheetState = {};
-
       expect(evaluateFormula("=1/0", spreadsheet)).toBe("#ERROR");
     });
 

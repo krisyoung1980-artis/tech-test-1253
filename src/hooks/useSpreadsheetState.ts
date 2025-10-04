@@ -1,7 +1,9 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { SpreadsheetState } from "../types/spreadsheet";
 import { createInitialState } from "../utils/createInitialState.ts";
 import { getTimestamp } from "../utils/timestamp";
+import { useStorageWorker } from "./useStorageWorker";
+import { logger } from "../utils/logger";
 
 type UpdateSource = "local" | "remote";
 
@@ -51,9 +53,33 @@ const applyLocalUpdate = (
 };
 
 export function useSpreadsheetState() {
-  const [spreadsheetState, setSpreadsheetState] = useState<SpreadsheetState>(
-    createInitialState()
-  );
+  const [spreadsheetState, setSpreadsheetState] =
+    useState<SpreadsheetState>(createInitialState);
+  const [isHydrated, setIsHydrated] = useState(false);
+  const { loadState, saveState } = useStorageWorker();
+
+  useEffect(() => {
+    loadState()
+      .then((storedState) => {
+        if (storedState) {
+          const initialState = createInitialState();
+          setSpreadsheetState({ ...initialState, ...storedState });
+        }
+        setIsHydrated(true);
+      })
+      .catch((error) => {
+        logger.error("Failed to load state from storage:", error);
+        setIsHydrated(true);
+      });
+  }, [loadState]);
+
+  useEffect(() => {
+    if (!isHydrated) return;
+
+    saveState(spreadsheetState).catch((error) => {
+      logger.error("Failed to save state to storage:", error);
+    });
+  }, [spreadsheetState, isHydrated, saveState]);
 
   const calculateNextState = useCallback(
     (prev: SpreadsheetState, options: UpdateOptions) => {
@@ -86,7 +112,7 @@ export function useSpreadsheetState() {
         });
       });
     },
-    []
+    [calculateNextState]
   );
 
   return {

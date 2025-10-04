@@ -1,11 +1,6 @@
 import { evaluateFormula } from "../utils/formulaEvaluator";
-import type { SpreadsheetState } from "../types/spreadsheet";
-
-export interface WorkerMessage {
-  cellId: string;
-  rawInput: string; // e.g., "=A1+B2"
-  spreadsheet: SpreadsheetState;
-}
+import { isValidWorkerMessage } from "../utils/messageValidation";
+import { logger } from "../utils/logger";
 
 export interface WorkerResponse {
   cellId: string;
@@ -13,9 +8,15 @@ export interface WorkerResponse {
   computedValue: string | number;
 }
 
-self.addEventListener("message", (event: MessageEvent<WorkerMessage>) => {
-  const { cellId, rawInput, spreadsheet } = event.data;
+self.addEventListener("message", (event: MessageEvent) => {
+  const message = event.data;
 
+  if (!isValidWorkerMessage(message)) {
+    logger.error("Invalid message format received by worker");
+    return;
+  }
+
+  const { cellId, rawInput, spreadsheet } = message;
   const computedValue = evaluateFormula(rawInput, spreadsheet);
 
   const response: WorkerResponse = { cellId, rawInput, computedValue };

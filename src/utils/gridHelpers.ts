@@ -1,4 +1,5 @@
 import type {
+  CellClassParams,
   ColDef,
   ITextCellEditorParams,
   ValueFormatterParams,
@@ -14,7 +15,10 @@ export const createColumnDefs = (state: SpreadsheetState): ColDef[] => [
     editable: false,
     width: 50,
     suppressMovable: true,
-    cellStyle: { fontWeight: "bold", backgroundColor: "#f5f5f5" },
+    cellStyle: {
+      fontWeight: "bold",
+      backgroundColor: `var(--ag-header-background-color)`,
+    },
   },
   ...COLUMNS.map((col) => ({
     headerName: col,
@@ -37,9 +41,9 @@ export const createColumnDefs = (state: SpreadsheetState): ColDef[] => [
         ? ""
         : String(params.value);
     },
-    cellClass: (params: any) => {
-      const value = parseInt(params.value, 10);
-      return typeof value === "number" && value < 0 ? "negative-cell" : "";
+    cellClass: (params: CellClassParams) => {
+      const value = parseInt(String(params.value ?? ""), 10);
+      return !isNaN(value) && value < 0 ? "negative-cell" : "";
     },
   })),
 ];
@@ -52,7 +56,8 @@ export const createRowData = (state: SpreadsheetState) => {
     };
     COLUMNS.forEach((col) => {
       const cellId = `${col}${row}`;
-      const value = state[cellId].computedValue;
+      const cell = state[cellId];
+      const value = cell?.computedValue ?? "";
       rowObj[col] = value === "" ? "" : value;
     });
     return rowObj;

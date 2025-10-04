@@ -1,5 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { BroadcastMessage } from "../types/spreadsheet";
+import { isValidBroadcastMessage } from "../utils/messageValidation";
+import { logger } from "../utils/logger";
 
 interface UseBroadcastSyncOptions {
   onMessage: (message: BroadcastMessage) => void;
@@ -12,11 +14,19 @@ export function useBroadcastSync({ onMessage, onError }: UseBroadcastSyncOptions
   useEffect(() => {
     const channel = new BroadcastChannel("spreadsheet-sync");
 
-    channel.onmessage = (event: MessageEvent<BroadcastMessage>) =>
-      onMessage(event.data);
+    channel.onmessage = (event: MessageEvent<BroadcastMessage>) => {
+      const message = event.data;
+
+      if (!isValidBroadcastMessage(message)) {
+        logger.error("[BroadcastChannel] Invalid message format:", message);
+        return;
+      }
+
+      onMessage(message);
+    };
 
     channel.onmessageerror = (event) => {
-      console.error("[BroadcastChannel] Message error:", event);
+      logger.error("[BroadcastChannel] Message error:", event);
       onError?.(event);
     };
 
@@ -24,14 +34,17 @@ export function useBroadcastSync({ onMessage, onError }: UseBroadcastSyncOptions
     return () => channel.close();
   }, [onMessage, onError]);
 
-  const broadcast = (message: BroadcastMessage) => {
-    try {
-      channelRef.current?.postMessage(message);
-    } catch (error) {
-      console.error("[BroadcastChannel] Failed to broadcast:", error);
-      onError?.(error as Error);
-    }
-  };
+  const broadcast = useCallback(
+    (message: BroadcastMessage) => {
+      try {
+        channelRef.current?.postMessage(message);
+      } catch (error) {
+        logger.error("[BroadcastChannel] Failed to broadcast:", error);
+        onError?.(error as Error);
+      }
+    },
+    [onError]
+  );
 
   return { broadcast };
 }

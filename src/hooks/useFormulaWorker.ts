@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import type { SpreadsheetState } from "../types/spreadsheet";
 import type { WorkerResponse } from "../workers/formulaWorker";
+import { logger } from "../utils/logger";
 
 interface UseFormulaWorkerOptions {
   onResult: (cellId: string, rawInput: string, computedValue: string | number) => void;
@@ -15,12 +16,25 @@ export function useFormulaWorker({ onResult, onError }: UseFormulaWorkerOptions)
     const worker = new Worker(url, { type: "module" });
 
     worker.onmessage = (event: MessageEvent<WorkerResponse>) => {
-      const { cellId, rawInput, computedValue } = event.data;
+      const response = event.data;
+
+      // Validate response structure
+      if (!response ||
+          typeof response !== 'object' ||
+          typeof response.cellId !== 'string' ||
+          typeof response.rawInput !== 'string' ||
+          (response.computedValue !== 0 && !response.computedValue)) {
+        logger.error('[Worker] Invalid response format:', response);
+        onError?.(new Error('Invalid worker response'));
+        return;
+      }
+
+      const { cellId, rawInput, computedValue } = response;
       onResult(cellId, rawInput, computedValue);
     };
 
     worker.onerror = (error) => {
-      console.error("[Worker] Error:", error);
+      logger.error("[Worker] Error:", error);
       onError?.(error);
     };
 
@@ -40,7 +54,7 @@ export function useFormulaWorker({ onResult, onError }: UseFormulaWorkerOptions)
         spreadsheet,
       });
     } catch (error) {
-      console.error("[Worker] Failed to post message:", error);
+      logger.error("[Worker] Failed to post message:", error);
       onError?.(error as Error);
     }
   };

@@ -1,4 +1,9 @@
 import type { SpreadsheetState } from "../types/spreadsheet";
+import { logger } from "./logger";
+import { DivisionByZeroError, FormulaTooComplexError } from "./errors";
+
+const MAX_RECURSION_DEPTH = 50;
+const ERROR_VALUE = "#ERROR";
 
 export function resolveCellReference(
   cellRef: string,
@@ -21,10 +26,19 @@ export function resolveCellReference(
 
 export function substituteCellReferences(
   expression: string,
-  spreadsheet: SpreadsheetState
+  spreadsheet: SpreadsheetState,
+  visitedCells = new Set<string>()
 ): string {
-  return expression.replace(/[A-Za-z]\d+/gi, (match) => {
-    const value = resolveCellReference(match, spreadsheet);
+  return expression.replace(/[A-Z]\d+/gi, (match) => {
+    const normalizedRef = match.toUpperCase();
+
+    if (visitedCells.has(normalizedRef)) {
+      logger.error(`Circular reference detected: ${normalizedRef}`);
+      return "0";
+    }
+
+    visitedCells.add(normalizedRef);
+    const value = resolveCellReference(normalizedRef, spreadsheet);
     return value.toString();
   });
 }
@@ -32,36 +46,62 @@ export function substituteCellReferences(
 const tokenize = (expression: string): string[] =>
   expression.replace(/\s/g, "").match(/\d+\.?\d*|[+\-*/]/g) || [];
 
-const evaluate = (tokens: string[]): number => {
-  // Find lowest precedence operator (+ or -) from right to left
-  for (let i = tokens.length - 1; i >= 0; i--) {
-    if (tokens[i] === "+" || tokens[i] === "-") {
-      const left = evaluate(tokens.slice(0, i));
-      const right = evaluate(tokens.slice(i + 1));
-      return tokens[i] === "+" ? left + right : left - right;
-    }
+const isAddOrSubtract = (token: string): boolean =>
+  token === "+" || token === "-";
+
+const isMultiplyOrDivide = (token: string): boolean =>
+  token === "*" || token === "/";
+
+const findOperator = (
+  tokens: string[],
+  predicate: (token: string) => boolean
+): number => tokens.findLastIndex(predicate);
+
+const applyAddOrSubtract = (
+  operator: string,
+  left: number,
+  right: number
+): number => (operator === "+" ? left + right : left - right);
+
+const applyMultiplyOrDivide = (
+  operator: string,
+  left: number,
+  right: number
+): number => {
+  if (operator === "/") {
+    if (right === 0) throw new DivisionByZeroError();
+    return left / right;
+  }
+  return left * right;
+};
+
+const handleUnary = (tokens: string[], depth: number): number | null => {
+  if (tokens[0] === "-") return evaluate(tokens.slice(1), depth + 1) * -1;
+  if (tokens[0] === "+") return evaluate(tokens.slice(1), depth + 1);
+  return null;
+};
+
+const evaluate = (tokens: string[], depth = 0): number => {
+  if (depth > MAX_RECURSION_DEPTH) {
+    throw new FormulaTooComplexError();
   }
 
-  // Find next precedence operator (* or /) from right to left
-  for (let i = tokens.length - 1; i >= 0; i--) {
-    if (tokens[i] === "*" || tokens[i] === "/") {
-      const left = evaluate(tokens.slice(0, i));
-      const right = evaluate(tokens.slice(i + 1));
-      if (tokens[i] === "/") {
-        if (right === 0) throw new Error("Division by zero");
-        return left / right;
-      }
-      return left * right;
-    }
+  const addSubIndex = findOperator(tokens, isAddOrSubtract);
+  if (addSubIndex !== -1) {
+    const left = evaluate(tokens.slice(0, addSubIndex), depth + 1);
+    const right = evaluate(tokens.slice(addSubIndex + 1), depth + 1);
+    return applyAddOrSubtract(tokens[addSubIndex], left, right);
   }
 
-  if (tokens[0] === "-") {
-    return -evaluate(tokens.slice(1));
+  const mulDivIndex = findOperator(tokens, isMultiplyOrDivide);
+  if (mulDivIndex !== -1) {
+    const left = evaluate(tokens.slice(0, mulDivIndex), depth + 1);
+    const right = evaluate(tokens.slice(mulDivIndex + 1), depth + 1);
+    return applyMultiplyOrDivide(tokens[mulDivIndex], left, right);
   }
 
-  if (tokens[0] === "+") {
-    return evaluate(tokens.slice(1));
-  }
+  const unaryResult = handleUnary(tokens, depth);
+  if (unaryResult !== null) return unaryResult;
 
   return parseFloat(tokens[0]);
 };
@@ -84,8 +124,9 @@ export function evaluateFormula(
       return result;
     }
 
-    return "#ERROR";
-  } catch {
-    return "#ERROR";
+    return ERROR_VALUE;
+  } catch (error) {
+    logger.error("Error evaluating formula:", formula, error);
+    return ERROR_VALUE;
   }
 }

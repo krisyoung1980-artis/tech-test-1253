@@ -1,7 +1,9 @@
 import {
   AllCommunityModule,
+  colorSchemeDark,
   ModuleRegistry,
   themeAlpine,
+  type CellValueChangedEvent,
 } from "ag-grid-community";
 import { AgGridReact } from "ag-grid-react";
 import React, { useCallback, useMemo } from "react";
@@ -10,6 +12,8 @@ import { createColumnDefs, createRowData } from "../utils/gridHelpers";
 
 ModuleRegistry.registerModules([AllCommunityModule]);
 
+const theme = themeAlpine.withPart(colorSchemeDark);
+
 export const SpreadsheetGrid: React.FC = () => {
   const { state, update } = useSpreadsheetController();
 
@@ -17,24 +21,24 @@ export const SpreadsheetGrid: React.FC = () => {
   const rowData = useMemo(() => createRowData(state), [state]);
 
   const onCellValueChanged = useCallback(
-    (params: any) => {
-      const col = params.colDef.field;
-      const row = params.node.rowIndex! + 1;
-      const cellId = `${col}${row}`;
-      const newValue = params.newValue ?? "";
-
+    (params: CellValueChangedEvent) => {
       if (params.node.rowIndex === undefined || params.node.rowIndex === null) {
         return;
       }
 
-      update(cellId, newValue, state);
+      const col = params.colDef.field;
+      const row = params.node.rowIndex + 1;
+      const cellId = `${col}${row}`;
+      const newValue = params.newValue ?? "";
+
+      update(cellId, newValue);
     },
-    [update, state]
+    [update]
   );
 
   return (
     <AgGridReact
-      theme={themeAlpine}
+      theme={theme}
       rowData={rowData}
       columnDefs={columnDefs}
       defaultColDef={{ flex: 1, resizable: true }}

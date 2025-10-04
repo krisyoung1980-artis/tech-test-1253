@@ -44,8 +44,15 @@ export function useSpreadsheetController() {
 
   const { evaluate } = useFormulaWorker({ onResult });
 
+  const update = useCallback(
+    (cellId: string, rawInput: string) => {
+      evaluate(cellId, rawInput, state);
+    },
+    [evaluate, state]
+  );
+
   return {
     state,
-    update: evaluate,
+    update,
   };
 }

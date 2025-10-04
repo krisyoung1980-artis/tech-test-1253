@@ -1,5 +1,5 @@
 import React from "react";
-import { SpreadsheetGrid } from "./components/SpreadsheetGrid";
+import { SpreadsheetGrid } from "./SpreadsheetGrid";
 
 export const App: React.FC = () => {
   return (
