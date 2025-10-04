@@ -3,7 +3,7 @@
 A simple spreadsheet application built with React, TypeScript, and AG Grid that syncs across browser tabs.
 
 ## Demo
-[video-1.webm](https://github.com/user-attachments/assets/fb9783b5-9e80-41ad-944b-3e6199389514)
+[video.webm](https://github.com/user-attachments/assets/e08ec57b-93ec-4196-b4a6-5793bbf6eaab)
 
 ## Features
 
