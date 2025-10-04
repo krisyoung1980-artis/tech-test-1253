@@ -44,6 +44,51 @@ describe("gridHelpers", () => {
         expect(col.editable).toBe(true);
       });
     });
+
+    it("applies negative-cell class when value is negative", () => {
+      const state: SpreadsheetState = {
+        A1: { rawInput: "-5", computedValue: -5 },
+      };
+      const columnDefs = createColumnDefs(state);
+      const columnA = columnDefs.find((col) => col.field === "A");
+
+      expect(columnA?.cellClass).toBeDefined();
+      const cellClass = columnA?.cellClass as (params: any) => string;
+      expect(cellClass({ value: -5 })).toBe("negative-cell");
+    });
+
+    it("does not apply negative-cell class when value is positive", () => {
+      const state: SpreadsheetState = {
+        A1: { rawInput: "5", computedValue: 5 },
+      };
+      const columnDefs = createColumnDefs(state);
+      const columnA = columnDefs.find((col) => col.field === "A");
+
+      const cellClass = columnA?.cellClass as (params: any) => string;
+      expect(cellClass({ value: 5 })).toBe("");
+    });
+
+    it("does not apply negative-cell class when value is zero", () => {
+      const state: SpreadsheetState = {
+        A1: { rawInput: "0", computedValue: 0 },
+      };
+      const columnDefs = createColumnDefs(state);
+      const columnA = columnDefs.find((col) => col.field === "A");
+
+      const cellClass = columnA?.cellClass as (params: any) => string;
+      expect(cellClass({ value: 0 })).toBe("");
+    });
+
+    it("does not apply negative-cell class when value is a string", () => {
+      const state: SpreadsheetState = {
+        A1: { rawInput: "hello", computedValue: "hello" },
+      };
+      const columnDefs = createColumnDefs(state);
+      const columnA = columnDefs.find((col) => col.field === "A");
+
+      const cellClass = columnA?.cellClass as (params: any) => string;
+      expect(cellClass({ value: "hello" })).toBe("");
+    });
   });
 
   describe("createRowData", () => {

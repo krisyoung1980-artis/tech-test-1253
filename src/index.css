@@ -39,3 +39,13 @@ h1 {
   padding: 0.5rem;
   height: 100%;
 }
+
+.ag-row:has(.negative-cell) {
+  animation: flash-red 1s ease;
+}
+
+@keyframes flash-red {
+  0% { background-color: #ffcccc; }
+  50% { background-color: #ff6666; }
+  100% { background-color: transparent; }
+}

@@ -37,6 +37,10 @@ export const createColumnDefs = (state: SpreadsheetState): ColDef[] => [
         ? ""
         : String(params.value);
     },
+    cellClass: (params: any) => {
+      const value = parseInt(params.value, 10);
+      return typeof value === "number" && value < 0 ? "negative-cell" : "";
+    },
   })),
 ];
 
