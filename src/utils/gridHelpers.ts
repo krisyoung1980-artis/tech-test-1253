@@ -1,0 +1,56 @@
+import type {
+  ColDef,
+  ITextCellEditorParams,
+  ValueFormatterParams,
+} from "ag-grid-community";
+import { COLUMNS, ROWS } from "../constants/grid";
+import type { SpreadsheetState } from "../types/spreadsheet";
+
+export const createColumnDefs = (state: SpreadsheetState): ColDef[] => [
+  {
+    headerName: "#",
+    field: "rowNum",
+    pinned: "left",
+    editable: false,
+    width: 50,
+    suppressMovable: true,
+    cellStyle: { fontWeight: "bold", backgroundColor: "#f5f5f5" },
+  },
+  ...COLUMNS.map((col) => ({
+    headerName: col,
+    field: col,
+    editable: true,
+    cellEditor: "agTextCellEditor",
+    cellDataType: false,
+    cellEditorParams: (params: ITextCellEditorParams) => {
+      const row = params.node.rowIndex! + 1;
+      const cellId = `${col}${row}`;
+      const rawInput = state[cellId]?.rawInput ?? "";
+
+      return {
+        value: rawInput,
+        useFormatter: false,
+      };
+    },
+    valueFormatter: (params: ValueFormatterParams) => {
+      return params.value === undefined || params.value === null
+        ? ""
+        : String(params.value);
+    },
+  })),
+];
+
+export const createRowData = (state: SpreadsheetState) => {
+  return ROWS.map((row, index) => {
+    const rowObj: Record<string, string | number> = {
+      rowNum: row,
+      id: `row-${index}`,
+    };
+    COLUMNS.forEach((col) => {
+      const cellId = `${col}${row}`;
+      const value = state[cellId].computedValue;
+      rowObj[col] = value === "" ? "" : value;
+    });
+    return rowObj;
+  });
+};

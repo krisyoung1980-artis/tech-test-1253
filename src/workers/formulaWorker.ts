@@ -9,19 +9,15 @@ export interface WorkerMessage {
 
 export interface WorkerResponse {
   cellId: string;
+  rawInput: string;
   computedValue: string | number;
 }
 
 self.addEventListener("message", (event: MessageEvent<WorkerMessage>) => {
   const { cellId, rawInput, spreadsheet } = event.data;
 
-  console.log(`[Worker] Evaluating ${cellId}: ${rawInput}`);
-
-  // Use the utility function to evaluate the formula
   const computedValue = evaluateFormula(rawInput, spreadsheet);
 
-  console.log(`[Worker] Result for ${cellId}: ${computedValue}`);
-
-  const response: WorkerResponse = { cellId, computedValue };
+  const response: WorkerResponse = { cellId, rawInput, computedValue };
   self.postMessage(response);
 });

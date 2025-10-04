@@ -1,7 +1,14 @@
 export type CellData = {
-  rawInput: string; // what the user typed
-  computedValue: string | number; // for now same as rawInput
+  rawInput: string;
+  computedValue: string | number;
+  timestamp?: number;
 };
 
 export type SpreadsheetState = Record<string, CellData>;
-// e.g., { "A1": {...}, "B2": {...} }
+
+export interface BroadcastMessage {
+  cellId: string;
+  rawInput: string;
+  computedValue: string | number;
+  timestamp: number;
+}
