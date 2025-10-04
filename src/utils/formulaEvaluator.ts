@@ -29,6 +29,43 @@ export function substituteCellReferences(
   });
 }
 
+const tokenize = (expression: string): string[] =>
+  expression.replace(/\s/g, "").match(/\d+\.?\d*|[+\-*/]/g) || [];
+
+const evaluate = (tokens: string[]): number => {
+  // Find lowest precedence operator (+ or -) from right to left
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    if (tokens[i] === "+" || tokens[i] === "-") {
+      const left = evaluate(tokens.slice(0, i));
+      const right = evaluate(tokens.slice(i + 1));
+      return tokens[i] === "+" ? left + right : left - right;
+    }
+  }
+
+  // Find next precedence operator (* or /) from right to left
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    if (tokens[i] === "*" || tokens[i] === "/") {
+      const left = evaluate(tokens.slice(0, i));
+      const right = evaluate(tokens.slice(i + 1));
+      if (tokens[i] === "/") {
+        if (right === 0) throw new Error("Division by zero");
+        return left / right;
+      }
+      return left * right;
+    }
+  }
+
+  if (tokens[0] === "-") {
+    return -evaluate(tokens.slice(1));
+  }
+
+  if (tokens[0] === "+") {
+    return evaluate(tokens.slice(1));
+  }
+
+  return parseFloat(tokens[0]);
+};
+
 export function evaluateFormula(
   formula: string,
   spreadsheet: SpreadsheetState
@@ -40,17 +77,10 @@ export function evaluateFormula(
   try {
     const expression = formula.slice(1);
     const exprWithValues = substituteCellReferences(expression, spreadsheet);
-
-    // Note: Using eval here is not ideal but acceptable for this demo
-    // In production, use a proper expression parser
-    // eslint-disable-next-line no-eval
-    const result = eval(exprWithValues);
+    const tokens = tokenize(exprWithValues);
+    const result = evaluate(tokens);
 
     if (typeof result === "number" && !isNaN(result) && isFinite(result)) {
-      return result;
-    }
-
-    if (typeof result === "string") {
       return result;
     }
 
