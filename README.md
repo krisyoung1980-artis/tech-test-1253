@@ -1,6 +1,7 @@
 # Tech Task: Spreadsheet
 
 A simple spreadsheet application built with React, TypeScript, and AG Grid that syncs across browser tabs.
+[video-1.webm](https://github.com/user-attachments/assets/fb9783b5-9e80-41ad-944b-3e6199389514)
 
 ## Features
 
